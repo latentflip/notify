@@ -22,13 +22,13 @@ public enum AESUtil {
     private static final String ENCRYPTION_KEY = "RwcmlVpg";
     private static final String ENCRYPTION_IV = "4e5Wa71fYoT7MFEX";
 
-    public static HashMap<String, String> encryptWithIV(String src) {
+    public static HashMap<String, String> encryptWithKey(String key, String src) {
         HashMap<String, String> encryptionMap = new HashMap<String, String>();
 
         try {
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             encryptionMap.put("iv", ENCRYPTION_IV);
-            cipher.init(Cipher.ENCRYPT_MODE, makeKey(), makeIv(encryptionMap.get("iv")));
+            cipher.init(Cipher.ENCRYPT_MODE, makeKey(key), makeIv(encryptionMap.get("iv")));
             encryptionMap.put("encrypted", Base64.encodeToString(cipher.doFinal(src.getBytes()), Base64.NO_WRAP));
 
             return encryptionMap;
@@ -79,9 +79,13 @@ public enum AESUtil {
     }
 
     static Key makeKey() {
+        return makeKey(ENCRYPTION_KEY);
+    }
+
+    static Key makeKey(String passkey) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] key = md.digest(ENCRYPTION_KEY.getBytes("UTF-8"));
+            byte[] key = md.digest(passkey.getBytes("UTF-8"));
             return new SecretKeySpec(key, "AES");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();

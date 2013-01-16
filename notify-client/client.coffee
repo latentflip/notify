@@ -6,6 +6,9 @@ Encrypt = require('./encrypt')
 
 Messages = []
 
+growlPasscodeError = ->
+  growl "It looks like your passcode is wrong", { title: "Notify" }
+
 growlMessage = (msg) ->
   args = [
     msg.content,
@@ -92,16 +95,20 @@ hash = (str) -> crypto.createHash('md5').update(str).digest("hex");
 
 server.on "message", (msgstr, rinfo) ->
   msgstr = msgstr.toString()
-  try
-    msg = JSON.parse msgstr
-  catch error
-    decrypted = Encrypt.decrypt(msgstr)
-    msg = JSON.parse(decrypted)
-  msg.sticky = false
-  msg = doIcon(msg)
-  Messages.unshift(msg)
-  growlMessage msg
+  msg = JSON.parse( msgstr.toString() )
 
+  try
+    if msg.iv
+      decrypted = Encrypt.decryptWithKeyAndIV("1234567890", msg.iv, msg.encrypted)
+      msg = JSON.parse(decrypted)
+
+    msg.sticky = false
+    msg = doIcon(msg)
+    Messages.unshift(msg)
+    growlMessage msg
+  catch e
+    console.log "Passcode is wrong"
+    growlPasscodeError()
 server.bind 2562
 
 

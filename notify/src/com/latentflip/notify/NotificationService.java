@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import org.json.JSONObject;
 
 import android.accessibilityservice.AccessibilityService;
@@ -58,21 +60,20 @@ public class NotificationService extends AccessibilityService {
     return appIcon64;
   }
 
-  public void encryptString(String msg) {
-    try {
- 
-      List<String> encrypted = SimpleCrypto.encrypt("password", msg);
-      System.out.println("Encrypted: " + encrypted.get(0) + " :: " + encrypted.get(1));
-      System.out.println("Decrypted: " + SimpleCrypto.decrypt("password", "1gJf+x6ln2XCHLi4pmh+EA==", "Id7oLlX1SEKoycqpK2caLw=="));
-      //System.out.println("Decrypted: " + crypto2.decrypt("password", "zyAw3hJ4uJVxvLu8VJAKxA=="));
-    } catch (Exception e) {
-      printException(e);
-    }
-  }
+
   public void sendMessageEncrypted(String msg) {
-      String encryptedMsg = AESUtil.encrypt(msg);
-      //HashMap<String, String> encrypted = AESUtil.encryptWithIV(msg);
-      sendMessage(encryptedMsg);
+
+      //String encryptedMsg = AESUtil.encrypt(msg);
+
+      HashMap<String, String> encrypted = AESUtil.encryptWithKey(settings().getString("passcode", ""), msg);
+      try {
+        JSONObject json = new JSONObject();
+        json.put("iv", encrypted.get("iv"));
+        json.put("encrypted", encrypted.get("encrypted"));
+        sendMessage(json.toString());
+      } catch (Exception e) {
+          printException(e);
+      }
   }
 
   public void sendMessage(String msg) {
@@ -177,13 +178,17 @@ public class NotificationService extends AccessibilityService {
       info.feedbackType = AccessibilityEvent.TYPES_ALL_MASK;
       setServiceInfo(info);
   }
+  private SharedPreferences settings() {
+    return PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+  }
 
   protected void sendConnectMessage() {
       JSONObject messageJSON = new JSONObject();
+
       try {
           messageJSON.put("app", "Notify");
           messageJSON.put("from", "Notify Service");
-          messageJSON.put("content", "Notify is connected");
+          messageJSON.put("content", "Notify is connected with code " + settings().getString("passcode", ""));
           sendMessageEncrypted(messageJSON.toString());
       } catch (Exception e) {
       }
